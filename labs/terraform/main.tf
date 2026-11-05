@@ -67,7 +67,89 @@ resource "github_repository_file" "development" {
   file                = ".gitignore"
   content             = "**/*.tfstate"
   commit_message      = "Managed by Terraform"
-  commit_author       = "Terraform User"
+  commit_author       = "Volodymyr Safiyanyk"
+  commit_email        = "ilovepurplecats@pm.me"
+  overwrite_on_create = true
+}
+
+# Get information about the current GitHub user
+data "github_user" "current" {
+  username = ""
+}
+
+# Get informfation about the example repository
+data "github_repository" "existing_example" {
+  full_name  = "terraform_user/${github_repository.example.name}"
+  depends_on = [github_repository.example]
+}
+
+# Create production repository
+resource "github_repository" "production" {
+  name        = var.prod_repository_name
+  description = "Production repository managed by Terraform"
+  visibility  = "public"
+
+  auto_init = true
+
+  has_issues      = true
+  has_discussions = false
+  has_wiki        = false
+
+  # vulnerability_alerts = true
+
+  topics = ["terraform", "production"]
+}
+
+# Create stricter branch protection for production
+resource "github_branch_protection" "production" {
+  repository_id = github_repository.production.node_id
+  pattern       = "main"
+
+  enforce_admins = true
+
+  required_pull_request_reviews {
+    required_approving_review_count = var.prod_branch_protection
+    dismiss_stale_reviews           = true
+    require_code_owner_reviews      = true
+  }
+
+  require_signed_commits = true
+
+  depends_on = [github_repository_file.production_readme]
+}
+
+# Create a production environment
+resource "github_repository_environment" "production" {
+  repository  = github_repository.production.name
+  environment = "production"
+
+  reviewers {
+    users = [data.github_user.current.id]
+  }
+
+  deployment_branch_policy {
+    protected_branches     = true
+    custom_branch_policies = false
+  }
+}
+
+# Create a README file that references all repositories
+resource "github_repository_file" "production_readme" {
+  repository          = github_repository.production.name
+  branch              = "main"
+  file                = "README.md"
+  content             = <<-EOT
+    # Production Repository
+    
+    This repository is managed by Terraform.
+    
+    ## Related Repositories
+    
+    - Development: [${github_repository.development.name}](${github_repository.development.html_url})
+    - Example: [${github_repository.example.name}](${github_repository.example.html_url})
+  EOT
+  commit_message      = "Add README via Terraform"
+  commit_author       = "Volodymyr Safiyanyk"
   commit_email        = "ilovepurplecats@pm.me"
   overwrite_on_create = true
 }

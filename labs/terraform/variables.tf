@@ -18,7 +18,7 @@ variable "environment" {
 
 variable "repository_features" {
   description = "Enabled features for the repository"
-  type        = object({
+  type = object({
     has_issues      = bool
     has_discussions = bool
     has_wiki        = bool
@@ -29,3 +29,28 @@ variable "repository_features" {
     has_wiki        = false
   }
 }
+
+variable "dev_repository_name" {
+  description = "Name of the Dev GitHub repo"
+  type        = string
+  default     = "dev-repo"
+}
+
+variable "dev_repo_issues" {
+  description = "Dev repo issues settings"
+  type        = bool
+  default     = true
+}
+
+variable "dev_discussions" {
+  description = "Dev repo discussions settings"
+  type        = bool
+  default     = true
+}
+
+variable "dev_wiki" {
+  description = "Dev repo wiki settings"
+  type        = bool
+  default     = true
+}
+
